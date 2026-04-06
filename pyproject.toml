@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anima-tde"
+version = "0.1.0"
+description = "Temporal Dynamics Enhancer for Directly Trained Spiking Object Detectors"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "torchaudio>=2.0.0",
+    "numpy>=1.24.0",
+    "opencv-python>=4.8.0",
+    "pillow>=10.0.0",
+    "scipy>=1.11.0",
+    "tqdm>=4.65.0",
+    "tensorboard>=2.14.0",
+    "safetensors>=0.4.0",
+    "onnx>=1.15.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "tomli>=2.0.0;python_version<'3.11'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+]
+spiking = [
+    "spikingjelly==0.0.0.0.14",
+]
+serve = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "huggingface-hub>=0.20.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anima_tde"]
+
+[tool.uv]
+extra-index-url = ["https://download.pytorch.org/whl/cu128"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "C4"]
+ignore = ["E501", "N806", "N812"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["anima_tde"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

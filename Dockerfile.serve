@@ -1,0 +1,30 @@
+# TDE Spiking Object Detection -- Serving Dockerfile
+# Layer 3: Module-specific (on top of anima-serve)
+
+FROM ghcr.io/robotflow-labs/anima-serve:jazzy AS base
+
+# Module metadata
+LABEL org.opencontainers.image.title="anima-tde"
+LABEL org.opencontainers.image.description="TDE Spiking Object Detector"
+LABEL org.opencontainers.image.version="0.1.0"
+
+# Install module dependencies
+WORKDIR /app
+
+COPY pyproject.toml .
+COPY src/ src/
+COPY configs/ configs/
+
+RUN uv pip install --system --no-cache-dir -e ".[serve]" \
+    --extra-index-url https://download.pytorch.org/whl/cu128
+
+# Expose port
+ENV ANIMA_SERVE_PORT=8080
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:${ANIMA_SERVE_PORT}/health || exit 1
+
+# Entrypoint
+CMD ["python", "-m", "anima_serve.cli", "--module", "anima_tde.serve:TDEDetectionNode"]

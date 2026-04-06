@@ -1,0 +1,78 @@
+version: "3.8"
+
+services:
+  tde-serve:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    profiles: ["serve"]
+    network_mode: host
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - ANIMA_MODULE_NAME=project_tde
+      - ANIMA_MODULE_VERSION=0.1.0
+      - ANIMA_HF_REPO=ilessio-aiflowlab/project_tde-checkpoint
+      - ANIMA_DEVICE=auto
+      - ANIMA_WEIGHT_FORMAT=auto
+      - ANIMA_SERVE_PORT=8080
+      - ANIMA_WEIGHT_DIR=/data/weights
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - weights:/data/weights
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  tde-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    profiles: ["api"]
+    ports:
+      - "8080:8080"
+    environment:
+      - ANIMA_MODULE_NAME=project_tde
+      - ANIMA_DEVICE=cpu
+      - ANIMA_SERVE_PORT=8080
+    volumes:
+      - weights:/data/weights
+
+  tde-ros2:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    profiles: ["ros2"]
+    network_mode: host
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - ANIMA_MODULE_NAME=project_tde
+      - ANIMA_DEVICE=auto
+      - ROS_DOMAIN_ID=0
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    volumes:
+      - weights:/data/weights
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  tde-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    profiles: ["test"]
+    environment:
+      - ANIMA_DEVICE=cpu
+    command: ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+
+volumes:
+  weights:

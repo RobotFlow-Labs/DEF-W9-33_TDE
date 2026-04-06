@@ -1,0 +1,91 @@
+# EvDET200K neuromorphic dataset config
+
+[model]
+backbone = "spikeyolo"
+timesteps = 4
+tde_variant = "sda"
+num_classes = 10                   # EvDET200K has 10 classes
+input_channels = 1                 # Single-channel event accumulation
+input_height = 304                 # EvDET native resolution
+input_width = 240
+
+[model.lif]
+membrane_decay = 0.25
+threshold = 1.0
+surrogate = "atan"
+reset = "soft"
+
+[model.se]
+kernel_size = 3
+out_channels = 64
+
+[model.agm]
+topk_percent = 50
+reduction_ratio = 16
+
+[training]
+batch_size = "auto"
+learning_rate = 0.01
+epochs = 50                        # Shorter for neuromorphic data
+optimizer = "sgd"
+momentum = 0.937
+weight_decay = 0.0005
+scheduler = "cosine"
+warmup_ratio = 0.05
+min_lr = 1e-6
+precision = "bf16"
+gradient_accumulation = 1
+max_grad_norm = 1.0
+seed = 42
+
+[training.augmentation]
+mosaic = true
+mosaic_prob = 1.0
+hsv_h = 0.0                       # No color aug for event data
+hsv_s = 0.0
+hsv_v = 0.0
+flip_lr = 0.5
+flip_ud = 0.0
+scale = 0.5
+
+[loss]
+box_weight = 0.05
+obj_weight = 1.0
+cls_weight = 0.5
+spike_reg_weight = 0.0
+
+[data]
+dataset = "evdet200k"
+train_path = "/mnt/forge-data/datasets/evdet200k/"
+num_workers = 4
+pin_memory = true
+train_split = 0.9
+val_split = 0.05
+test_split = 0.05
+
+[checkpoint]
+output_dir = "/mnt/artifacts-datai/checkpoints/project_tde_evdet"
+save_every_n_steps = 500
+keep_top_k = 2
+metric = "val_loss"
+mode = "min"
+
+[early_stopping]
+enabled = true
+patience = 10
+min_delta = 0.0001
+
+[logging]
+log_dir = "/mnt/artifacts-datai/logs/project_tde_evdet"
+tensorboard_dir = "/mnt/artifacts-datai/tensorboard/project_tde_evdet"
+
+[evaluation]
+nms_iou_threshold = 0.45
+confidence_threshold = 0.001
+map_iou_thresholds = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+[energy]
+technology_node_nm = 45
+mul_energy_pj = 3.7
+ac_energy_pj = 0.9
+precision_bits = 32

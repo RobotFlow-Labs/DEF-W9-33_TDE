@@ -1,0 +1,91 @@
+# Debug config for smoke testing -- 2 epochs, tiny batch
+
+[model]
+backbone = "spikeyolo"
+timesteps = 2                      # Reduced for speed
+tde_variant = "sda"
+num_classes = 20
+input_channels = 3
+input_height = 320                 # Half resolution
+input_width = 320
+
+[model.lif]
+membrane_decay = 0.25
+threshold = 1.0
+surrogate = "atan"
+reset = "soft"
+
+[model.se]
+kernel_size = 3
+out_channels = 32                  # Smaller for debug
+
+[model.agm]
+topk_percent = 50
+reduction_ratio = 16
+
+[training]
+batch_size = 4
+learning_rate = 0.01
+epochs = 2
+optimizer = "sgd"
+momentum = 0.937
+weight_decay = 0.0005
+scheduler = "cosine"
+warmup_ratio = 0.05
+min_lr = 1e-6
+precision = "fp32"                 # Full precision for debug
+gradient_accumulation = 1
+max_grad_norm = 1.0
+seed = 42
+
+[training.augmentation]
+mosaic = false
+mosaic_prob = 0.0
+hsv_h = 0.0
+hsv_s = 0.0
+hsv_v = 0.0
+flip_lr = 0.0
+flip_ud = 0.0
+scale = 0.0
+
+[loss]
+box_weight = 0.05
+obj_weight = 1.0
+cls_weight = 0.5
+spike_reg_weight = 0.0
+
+[data]
+dataset = "voc"
+train_path = "/mnt/forge-data/datasets/voc/"
+num_workers = 2
+pin_memory = false
+train_split = 0.9
+val_split = 0.05
+test_split = 0.05
+
+[checkpoint]
+output_dir = "/mnt/artifacts-datai/checkpoints/project_tde_debug"
+save_every_n_steps = 10
+keep_top_k = 1
+metric = "val_loss"
+mode = "min"
+
+[early_stopping]
+enabled = false
+patience = 5
+min_delta = 0.001
+
+[logging]
+log_dir = "/mnt/artifacts-datai/logs/project_tde_debug"
+tensorboard_dir = "/mnt/artifacts-datai/tensorboard/project_tde_debug"
+
+[evaluation]
+nms_iou_threshold = 0.45
+confidence_threshold = 0.25
+map_iou_thresholds = [0.5]
+
+[energy]
+technology_node_nm = 45
+mul_energy_pj = 3.7
+ac_energy_pj = 0.9
+precision_bits = 32

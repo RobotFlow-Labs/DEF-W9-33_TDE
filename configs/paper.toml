@@ -1,0 +1,92 @@
+# Paper-faithful hyperparameters for TDE
+# Source: arXiv 2512.02447 + SpikeYOLO (arXiv 2407.20708)
+
+[model]
+backbone = "spikeyolo"             # SpikeYOLO architecture
+timesteps = 4                      # T=4 (paper default)
+tde_variant = "sda"                # "sda" (spike-driven) or "tcsa" (standard)
+num_classes = 20                   # VOC: 20, EvDET200K: 10
+input_channels = 3
+input_height = 640
+input_width = 640
+
+[model.lif]
+membrane_decay = 0.25              # beta = 0.25
+threshold = 1.0                    # V_th = 1.0
+surrogate = "atan"                 # Surrogate gradient function
+reset = "soft"                     # Soft reset mechanism
+
+[model.se]
+kernel_size = 3                    # k=3 for Conv in SE
+out_channels = 64                  # Output channels of SE
+
+[model.agm]
+topk_percent = 50                  # Top-k% for LIF0 firing
+reduction_ratio = 16               # Channel attention reduction
+
+[training]
+batch_size = "auto"                # Auto-detect for L4 GPU
+learning_rate = 0.01
+epochs = 300
+optimizer = "sgd"
+momentum = 0.937
+weight_decay = 0.0005
+scheduler = "cosine"
+warmup_ratio = 0.05                # 5% linear warmup
+min_lr = 1e-6
+precision = "bf16"
+gradient_accumulation = 1
+max_grad_norm = 1.0
+seed = 42
+
+[training.augmentation]
+mosaic = true
+mosaic_prob = 1.0
+hsv_h = 0.015                     # HSV-Hue augmentation
+hsv_s = 0.7                       # HSV-Saturation augmentation
+hsv_v = 0.4                       # HSV-Value augmentation
+flip_lr = 0.5                     # Horizontal flip probability
+flip_ud = 0.0                     # Vertical flip probability
+scale = 0.5                       # Scale jitter
+
+[loss]
+box_weight = 0.05                  # CIoU box loss weight
+obj_weight = 1.0                   # Objectness loss weight
+cls_weight = 0.5                   # Classification loss weight
+spike_reg_weight = 0.0             # Spike rate regularization (0 = off)
+
+[data]
+dataset = "voc"                    # "voc" or "evdet200k"
+train_path = "/mnt/forge-data/datasets/voc/"
+num_workers = 4
+pin_memory = true
+train_split = 0.9
+val_split = 0.05
+test_split = 0.05
+
+[checkpoint]
+output_dir = "/mnt/artifacts-datai/checkpoints/project_tde"
+save_every_n_steps = 500
+keep_top_k = 2
+metric = "val_loss"
+mode = "min"
+
+[early_stopping]
+enabled = true
+patience = 20
+min_delta = 0.0001
+
+[logging]
+log_dir = "/mnt/artifacts-datai/logs/project_tde"
+tensorboard_dir = "/mnt/artifacts-datai/tensorboard/project_tde"
+
+[evaluation]
+nms_iou_threshold = 0.45
+confidence_threshold = 0.001       # Low for mAP computation
+map_iou_thresholds = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+
+[energy]
+technology_node_nm = 45
+mul_energy_pj = 3.7                # Energy per multiply (pJ)
+ac_energy_pj = 0.9                 # Energy per accumulate (pJ)
+precision_bits = 32

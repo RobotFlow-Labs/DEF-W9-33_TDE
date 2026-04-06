@@ -1,0 +1,81 @@
+name: project_tde
+version: "0.1.0"
+description: >
+  Temporal Dynamics Enhancer for Directly Trained Spiking Object Detectors.
+  Plug-in module that strengthens temporal dynamics in SNN-based detectors
+  via Spiking Encoder and Spike-Driven Attention.
+paper:
+  title: "Temporal Dynamics Enhancer for Directly Trained Spiking Object Detectors"
+  arxiv: "2512.02447"
+  authors: ["Fan Luo", "Zeyu Gao", "Xinhao Luo", "Kai Zhao", "Yanfeng Lu"]
+  venue: "arXiv 2024"
+domain: defense
+wave: 9
+module_index: 33
+
+capabilities:
+  - spiking_object_detection
+  - energy_efficient_inference
+  - temporal_dynamics_enhancement
+  - spike_driven_attention
+
+datasets:
+  - name: pascal_voc
+    path: /mnt/forge-data/datasets/voc/
+    classes: 20
+  - name: evdet200k
+    path: /mnt/forge-data/datasets/evdet200k/
+    classes: 10
+
+models:
+  backbone: SpikeYOLO
+  params_m: 23.6
+  timesteps: 4
+  neuron: LIF
+
+training:
+  optimizer: sgd
+  learning_rate: 0.01
+  epochs: 300
+  batch_size: auto
+  precision: bf16
+
+api:
+  port: 8080
+  endpoints:
+    health: /health
+    ready: /ready
+    info: /info
+    predict: /predict
+  input:
+    type: image
+    format: "RGB uint8"
+    shape: [3, 640, 640]
+  output:
+    type: detections
+    format: "boxes (x1,y1,x2,y2) + scores + class_ids"
+
+docker:
+  base_image: "ghcr.io/robotflow-labs/anima-serve:jazzy"
+  dockerfile: Dockerfile.serve
+  compose: docker-compose.serve.yml
+
+ros2:
+  node_name: tde_detection_node
+  subscriptions:
+    - topic: /camera/image_raw
+      type: sensor_msgs/Image
+  publications:
+    - topic: /tde/detections
+      type: vision_msgs/Detection2DArray
+  parameters:
+    - name: confidence_threshold
+      default: 0.25
+    - name: nms_threshold
+      default: 0.45
+    - name: timesteps
+      default: 4
+
+hf:
+  repo: ilessio-aiflowlab/project_tde-checkpoint
+  organization: ilessio-aiflowlab
