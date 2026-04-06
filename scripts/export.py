@@ -43,11 +43,13 @@ def export_onnx(
     device = next(model.parameters()).device
     dummy = torch.randn(*input_shape, device=device)
 
+    # Use legacy exporter — dynamo exporter has issues with temporal loops
     torch.onnx.export(
         model,
         dummy,
         str(output_path),
         opset_version=opset,
+        dynamo=False,
         input_names=["image"],
         output_names=["det_p3", "det_p4", "det_p5"],
         dynamic_axes={

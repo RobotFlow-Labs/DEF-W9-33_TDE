@@ -181,12 +181,18 @@ class SpikingEncoder(nn.Module):
 # Attention Gating Module (AGM) with SDA
 # ---------------------------------------------------------------------------
 
+
+def _global_max_pool2d(x: torch.Tensor) -> torch.Tensor:
+    """ONNX-compatible global max pool: (B, C, H, W) -> (B, C, 1, 1)."""
+    return x.flatten(2).max(dim=2).values.unsqueeze(-1).unsqueeze(-1)
+
+
 class TemporalAttention(nn.Module):
     """Temporal attention branch using LIF0 + LIF1."""
 
     def __init__(self, channels: int, timesteps: int, beta: float = 0.25) -> None:
         super().__init__()
-        self.pool = nn.AdaptiveMaxPool2d(1)
+        # Global max pool is done via _global_max_pool2d (ONNX-compatible)
         self.lif0 = LIF0Neuron(beta=beta, topk_percent=50)
         self.fc = nn.Linear(channels, timesteps)
         self.lif1 = LIF1Neuron(beta=beta)
@@ -198,7 +204,7 @@ class TemporalAttention(nn.Module):
         T, B, C, H, W = x.shape
         pooled = []
         for t in range(T):
-            pooled.append(self.pool(x[t]).view(B, C))
+            pooled.append(_global_max_pool2d(x[t]).view(B, C))
         pooled = torch.stack(pooled, dim=0)  # (T, B, C)
 
         h = self.lif0(pooled)  # (T, B, C)
@@ -222,7 +228,7 @@ class ChannelAttention(nn.Module):
 
     def __init__(self, channels: int, reduction: int = 16, beta: float = 0.25) -> None:
         super().__init__()
-        self.pool = nn.AdaptiveMaxPool2d(1)
+        # Global max pool is done via _global_max_pool2d (ONNX-compatible)
         self.lif0 = LIF0Neuron(beta=beta, topk_percent=50)
         mid = max(channels // reduction, 4)
         self.fc1 = nn.Linear(channels, mid)
@@ -236,7 +242,7 @@ class ChannelAttention(nn.Module):
         T, B, C, H, W = x.shape
         pooled = []
         for t in range(T):
-            pooled.append(self.pool(x[t]).view(B, C))
+            pooled.append(_global_max_pool2d(x[t]).view(B, C))
         pooled = torch.stack(pooled, dim=0)  # (T, B, C)
 
         h = self.lif0(pooled)

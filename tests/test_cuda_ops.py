@@ -5,16 +5,15 @@ from __future__ import annotations
 import pytest
 import torch
 
+from anima_tde.backends.cuda.nms_cuda import (
+    cuda_box_iou,
+    cuda_nms,
+)
 from anima_tde.backends.cuda.spiking_cuda import (
     CUDALIFNeuron,
     fused_alpha_mix,
     fused_sda_attention,
     has_cuda_ops,
-)
-from anima_tde.backends.cuda.nms_cuda import (
-    cuda_box_iou,
-    cuda_nms,
-    has_detection_ops,
 )
 
 

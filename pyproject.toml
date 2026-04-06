@@ -53,7 +53,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "C4"]
-ignore = ["E501", "N806", "N812"]
+ignore = ["E501", "N806", "N803", "N812"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["anima_tde"]
