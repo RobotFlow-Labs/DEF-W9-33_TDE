@@ -1,6 +1,6 @@
 # NEXT_STEPS.md
-> Last updated: 2026-04-05
-> MVP Readiness: 25%
+> Last updated: 2026-04-06
+> MVP Readiness: 75%
 
 ## Done
 - [x] Paper analysis complete (arXiv 2512.02447)
@@ -10,33 +10,47 @@
 - [x] 7 PRD files in prds/
 - [x] tasks/INDEX.md with granular tasks
 - [x] pyproject.toml with hatchling + cu128
-- [x] configs/paper.toml + debug.toml
+- [x] configs/paper.toml + debug.toml + evdet200k.toml
 - [x] anima_module.yaml
-- [x] src/anima_tde/ -- full Python package (model, dataset, train, evaluate, losses, utils, neurons)
-- [x] scripts/train.py + scripts/evaluate.py
-- [x] tests/test_model.py + tests/test_dataset.py
-- [x] Dockerfile.serve + docker-compose.serve.yml
+- [x] src/anima_tde/ -- full Python package
+- [x] LIF neurons (standard, LIF0 top-k%, LIF1 dual-output)
+- [x] Spiking Encoder (SE) with learnable alpha
+- [x] Attention Gating Module (AGM) -- temporal, channel, spatial
+- [x] Spike-Driven Attention (SDA) -- accumulation-only, 0 MUL
+- [x] SpikeYOLO backbone with multi-scale detection head
+- [x] Detection loss (CIoU + BCE obj + BCE cls)
+- [x] Training pipeline with cosine warmup + early stopping
+- [x] VOC + EvDET200K dataset loaders
+- [x] Evaluation pipeline (mAP@50, mAP@50:95, energy)
+- [x] Serving node (FastAPI) + Docker
+- [x] **Custom CUDA kernels**: fused_lif_forward/backward, fused_sda, fused_alpha_mix
+- [x] **Shared CUDA integration**: detection_ops (NMS, IoU), fused_image_preprocess
+- [x] Detection decoder with CUDA-accelerated NMS
+- [x] Export pipeline: pth -> safetensors -> ONNX -> TRT FP16 -> TRT FP32
+- [x] ONNX-compatible pooling (replaced AdaptiveMaxPool2d)
+- [x] .venv with torch cu128, spikingjelly, all deps
+- [x] VOC2007 extracted + YOLO format (4510 train, 501 val, 4952 test)
+- [x] 33/33 tests passing, lint clean
+- [x] GPU smoke test passed (17.13M params, forward+backward OK)
 
 ## In Progress
-- [ ] Nothing currently in progress
+- [ ] Waiting for user to confirm GPU availability for training
 
 ## TODO
-- [ ] Create .venv and install dependencies (uv sync)
-- [ ] Download PASCAL VOC 2007/2012 datasets
-- [ ] Download EvDET200K dataset
-- [ ] Run ruff check and fix any lint issues
-- [ ] Run pytest smoke tests
-- [ ] PRD-04: Full training pipeline validation
-- [ ] PRD-05: Evaluation on test set
-- [ ] PRD-06: ONNX + TRT export
-- [ ] PRD-07: Docker build + serve test
+- [ ] Run full training on VOC2007 (300 epochs, nohup+disown)
+- [ ] Evaluate on VOC2007 test split (mAP@50, mAP@50:95)
+- [ ] Generate TRAINING_REPORT.md
+- [ ] Export all 5 formats from best checkpoint
+- [ ] Push to HuggingFace (ilessio-aiflowlab/project_tde-checkpoint)
+- [ ] Add VOC2012 data when available
+- [ ] Add EvDET200K data when available
+- [ ] Docker build + health check
 
 ## Blocking
-- VOC and EvDET200K datasets not yet on disk
-- spikingjelly not yet installed in venv
+- Need GPU assignment from user before training
+- VOC2012 downloading (user will notify)
+- EvDET200K downloading from Baidu (slow, user will notify)
 
 ## Downloads Needed
-- PASCAL VOC 2007: ~900MB -- see ASSETS.md
-- PASCAL VOC 2012: ~2GB -- see ASSETS.md
-- EvDET200K: ~10GB -- check paper authors' release
-- spikingjelly: `uv pip install spikingjelly==0.0.0.0.14`
+- PASCAL VOC 2012: ~2GB -- user downloading
+- EvDET200K: ~10GB -- user downloading from Baidu

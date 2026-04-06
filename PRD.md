@@ -2,19 +2,19 @@
 
 > Module: 33_TDE (Wave 9 Defense)
 > Paper: arXiv 2512.02447 -- Temporal Dynamics Enhancer for Directly Trained Spiking Object Detectors
-> Last updated: 2026-04-05
+> Last updated: 2026-04-06
 
 ## Build Plan
 
 | PRD | Title | Status | Description |
 |-----|-------|--------|-------------|
-| PRD-01 | Foundation | [ ] TODO | Project scaffold, venv, pyproject.toml, configs, CI |
-| PRD-02 | Core Model | [ ] TODO | LIF neurons, SE, AGM, SDA, SpikeYOLO backbone |
-| PRD-03 | Loss Functions | [ ] TODO | Detection loss (CIoU + BCE cls + BCE obj), energy loss |
-| PRD-04 | Training Pipeline | [ ] TODO | Dataset loaders, training loop, checkpointing, logging |
-| PRD-05 | Evaluation | [ ] TODO | mAP@50, mAP@50-95, energy metrics, visualization |
-| PRD-06 | Export Pipeline | [ ] TODO | ONNX, TensorRT fp16/fp32, safetensors |
-| PRD-07 | Integration | [ ] TODO | Docker serve, ROS2 node, anima_module.yaml, HF push |
+| PRD-01 | Foundation | [x] DONE | Project scaffold, venv, pyproject.toml, configs, CI |
+| PRD-02 | Core Model | [x] DONE | LIF neurons, SE, AGM, SDA, SpikeYOLO backbone |
+| PRD-03 | Loss Functions | [x] DONE | Detection loss (CIoU + BCE cls + BCE obj), energy loss |
+| PRD-04 | Training Pipeline | [x] DONE | Dataset loaders, training loop, checkpointing, logging, CUDA kernels |
+| PRD-05 | Evaluation | [x] DONE | mAP@50, mAP@50-95, energy metrics, NMS decoder |
+| PRD-06 | Export Pipeline | [x] DONE | ONNX, TensorRT fp16/fp32, safetensors |
+| PRD-07 | Integration | [ ] TODO | Docker serve, ROS2 node, HF push (blocked: needs training) |
 
 ## Architecture Overview
 
@@ -25,7 +25,7 @@ Input Image (C x H x W)
 [Spiking Encoder (SE)] -- generates T timesteps of diverse spike stimuli
     |                       alpha_t controls mix of current vs previous features
     v
-[SNN Backbone] -- SpikeYOLO or EMS-YOLO (direct-trained SNN detector)
+[SNN Backbone] -- SpikeYOLO (direct-trained SNN detector)
     |               uses LIF neurons with surrogate gradient
     v
 [Attention Gating Module (AGM)] -- temporal + channel + spatial attention
@@ -37,11 +37,23 @@ Input Image (C x H x W)
 Bounding Boxes + Class Predictions
 ```
 
+## CUDA Acceleration
+
+| Kernel | Type | Location |
+|--------|------|----------|
+| fused_lif_forward | Custom (sm_89) | backends/cuda/kernels/spiking_ops.cu |
+| fused_lif_backward | Custom (sm_89) | backends/cuda/kernels/spiking_ops.cu |
+| fused_sda_attention | Custom (sm_89) | backends/cuda/kernels/spiking_ops.cu |
+| fused_alpha_mix | Custom (sm_89) | backends/cuda/kernels/spiking_ops.cu |
+| detection_ops (NMS, IoU) | Shared infra | /mnt/forge-data/shared_infra/cuda_extensions/ |
+| fused_image_preprocess | Shared infra | /mnt/forge-data/shared_infra/cuda_extensions/ |
+
 ## Key Design Decisions
 
-1. **Backbone**: Implement SpikeYOLO as primary backbone (ECCV 2024, best results)
-2. **Timesteps**: T=4 (paper default, good accuracy/efficiency tradeoff)
-3. **Attention**: Implement both TCSA and SDA variants
-4. **Neuron**: LIF with surrogate gradient (spikingjelly)
-5. **Framework**: Custom implementation (not ultralytics fork) for clean code
+1. **Backbone**: SpikeYOLO as primary backbone (ECCV 2024, best results)
+2. **Timesteps**: T=4 (paper default)
+3. **Attention**: Both TCSA and SDA variants implemented
+4. **Neuron**: LIF with atan surrogate gradient (custom CUDA kernel)
+5. **Framework**: Custom implementation (not ultralytics fork)
 6. **Training**: SGD, lr=0.01, 300 epochs, mosaic augmentation
+7. **ONNX**: Legacy exporter (dynamo has issues with temporal loops)
